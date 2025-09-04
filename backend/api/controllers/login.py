@@ -2,7 +2,7 @@ from backend.models.user import User, save_user
 from typing import Dict
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
-import jwt
+from backend.helper.jwt import generate_jwt_token
 import bcrypt
 import uuid
 
@@ -32,7 +32,7 @@ async def signup_user(user: User) -> JSONResponse:
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=exc
+            detail=str(exc)
         )
     
 async def signup_guest_user(user: User) -> JSONResponse:
@@ -59,8 +59,10 @@ async def signup_guest_user(user: User) -> JSONResponse:
     except Exception as exc:
         raise exc
     
-def generate_jwt_token(payload: Dict) -> str:
-    return jwt.encode(payload, "hellow", algorithm="HS256")
-
-def decode_jwt_token(token: str) -> Dict:
-    return jwt.decode(token, "hellow", algorithms=["HS256"])
+def verify_user() -> JSONResponse:
+    return JSONResponse(
+        content={
+            "isSuccess": True
+        },
+        status_code=200
+    )

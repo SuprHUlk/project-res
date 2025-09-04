@@ -1,11 +1,12 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
 from backend.models.user import User
-from backend.api.controllers.login import signup_user
+from backend.api.controllers.login import signup_user, verify_user
+from backend.middleware.auth import auth_required
 
 router = APIRouter(prefix='/login')
 
 @router.post("/signup")
-async def test(user: User):
+async def signup(user: User):
     if not user.is_guest_user and (not user.email or not user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -13,5 +14,7 @@ async def test(user: User):
         )
     return await signup_user(user)
 
-
-
+@router.get("/verify")
+@auth_required
+async def test(request: Request):
+    return verify_user

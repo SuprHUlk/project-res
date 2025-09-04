@@ -14,21 +14,17 @@ class UserRepository(AsyncAbstractRepository[User]):
     class Meta:
         collection_name = 'users'
 
-def get_user_repo():
-    mongo_client = get_mongo_client()
-    return UserRepository(mongo_client)
+    async def initialize_indexes(self):
+        collection = self.get_collection()
+        await collection.create_index('email', unique=True)
 
 async def save_user(user: User):
     try:
-       await get_user_repo().save(user)
+        await get_user_repo().save(user)    
     except Exception as exc:
         raise exc
 
-# async def get_user_id(id)
-
-
-# Example usage
-# user = User(name='John Doe', email='john@example.com')
-# await user_repo.save(user)
-
-# user = await user_repo.find_one_by_id(user_id)
+def get_user_repo():
+    mongo_client = get_mongo_client()
+    repo = UserRepository(mongo_client)
+    return repo
