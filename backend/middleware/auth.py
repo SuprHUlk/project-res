@@ -15,9 +15,8 @@ def auth_required(func: Callable):
                 break
         if request is None:
             request = kwargs.get("request")
-
-        token = request.headers.get("Authorization")
-
+        
+        token = request.cookies.get("Authorization")
         try:
             encrypted_token = token.split(" ")[1]   
             request.state.user = decode_jwt_token(encrypted_token)

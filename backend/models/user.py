@@ -1,5 +1,5 @@
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, Union
+from pydantic import BaseModel, Field
 from pydantic_mongo import AsyncAbstractRepository, PydanticObjectId
 from backend.database.mongoDb import get_mongo_client
 
@@ -7,7 +7,10 @@ class User(BaseModel):
     id: Optional[PydanticObjectId] = None
     email: Optional[str] = "testUser" 
     password: Optional[str] = "resumeplusplus"
-    is_guest_user: Optional[bool] = False
+    is_guest_user: Optional[bool] = Field(default=False, alias="isGuestUser")
+    
+    class Config:
+        populate_by_name = True
 
 
 class UserRepository(AsyncAbstractRepository[User]):
@@ -21,6 +24,13 @@ class UserRepository(AsyncAbstractRepository[User]):
 async def save_user(user: User):
     try:
         await get_user_repo().save(user)    
+    except Exception as exc:
+        raise exc
+    
+async def exists(user: User) -> Union[User, None]:
+    try:
+        user = await get_user_repo().find_one_by({"email": user.email})
+        return user if user else None
     except Exception as exc:
         raise exc
 

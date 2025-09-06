@@ -1,4 +1,4 @@
-from backend.models.user import User, save_user
+from backend.models.user import User, save_user, exists
 from typing import Dict
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
@@ -10,11 +10,7 @@ async def signup_user(user: User) -> JSONResponse:
     try:
         if user.is_guest_user:
             return await signup_guest_user(user)
-    
-        hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-        new_user = User(email=user.email, password=hashed_password)
-        await save_user(new_user)
+        
         response = JSONResponse(
             content={
                 "message": "User signup successful",
@@ -22,11 +18,16 @@ async def signup_user(user: User) -> JSONResponse:
             },
             status_code=201
         )
+        
+        if exists(user):
+            response.status_code=200
+            set_authroization_header(response=response, user=user)
+            return response
+    
+        hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-        response.set_cookie(key="jwt-token", value=generate_jwt_token({ 
-            "email": user.email,
-            "isGuestUser": user.is_guest_user
-        }))
+        new_user = User(email=user.email, password=hashed_password)
+        await save_user(new_user)
 
         return response
     except Exception as exc:
@@ -50,10 +51,7 @@ async def signup_guest_user(user: User) -> JSONResponse:
             status_code=201
         )
 
-        response.set_cookie(key="jwt-token", value=generate_jwt_token({ 
-            "email": user.email,
-            "isGuestUser": user.is_guest_user
-        }))
+        set_authroization_header(response=response, user=user)
 
         return response
     except Exception as exc:
@@ -66,3 +64,9 @@ def verify_user() -> JSONResponse:
         },
         status_code=200
     )
+
+def set_authroization_header(response: JSONResponse, user: User):
+    response.set_cookie(key="Authorization", value=f"Bearer {generate_jwt_token({ 
+        "email": user.email,
+        "isGuestUser": user.is_guest_user
+    })}")
